@@ -8,16 +8,16 @@ import hu.rushhour.model.Orientation;
 import hu.rushhour.model.Vehicle;
 import hu.rushhour.player.ComputerPlayer;
 import hu.rushhour.player.HumanPlayer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.nio.file.Path;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Random;
 import java.util.Scanner;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Game {
 
@@ -50,7 +50,6 @@ public class Game {
 
   public Game(Scanner scanner, Random random,
               Path boardPath, DatabaseManager database) {
-
     this.scanner = scanner;
     this.random = random;
     this.boardPath = boardPath;
@@ -67,7 +66,6 @@ public class Game {
     String name = scanner.nextLine().trim();
 
     while (name.isBlank()) {
-
       System.out.print("A nev nem lehet ures: ");
       name = scanner.nextLine().trim();
     }
@@ -113,13 +111,11 @@ public class Game {
     if (humanWon) {
 
       System.out.println("Gyoztes: " + human.getName());
-
       LOGGER.info("Winner: {}", human.getName());
 
     } else {
 
       System.out.println("Gyoztes: " + computer.getName());
-
       LOGGER.info("Winner: {}", computer.getName());
     }
 
@@ -138,11 +134,9 @@ public class Game {
 
       database.initialize();
 
-      database.recordGame(
-          human.getName(), humanWon);
+      database.recordGame(human.getName(), humanWon);
 
-      LOGGER.info("Game result saved: {}",
-          human.getName());
+      LOGGER.info("Game result saved: {}", human.getName());
 
       database.printLeaderboard();
 
@@ -157,8 +151,7 @@ public class Game {
 
   private void initializeBoard() {
 
-    BoardFileHandler handler =
-        new BoardFileHandler();
+    BoardFileHandler handler = new BoardFileHandler();
 
     try {
 
@@ -176,8 +169,7 @@ public class Game {
 
         board = handler.loadDefault();
 
-        System.out.println(
-            "Alapertelmezett palya betoltve.");
+        System.out.println("Alapertelmezett palya betoltve.");
 
         LOGGER.info("Default board loaded");
 
@@ -191,6 +183,30 @@ public class Game {
     }
   }
 
+  private void saveBoard() {
+
+    BoardFileHandler handler = new BoardFileHandler();
+
+    Path savePath = Path.of("saved-board.txt");
+
+    try {
+
+      handler.save(savePath, board);
+
+      System.out.println("A palya sikeresen mentve!");
+
+      System.out.println("Fajl: " + savePath);
+
+      LOGGER.info("Board saved: {}", savePath);
+
+    } catch (IOException e) {
+
+      System.out.println("A palya mentese sikertelen!");
+
+      LOGGER.error("Board saving failed", e);
+    }
+  }
+
   private void humanTurn() {
 
     System.out.println("\n"
@@ -201,6 +217,7 @@ public class Game {
       System.out.println("Parancs: JARMU ELMOZDULAS");
       System.out.println("Pelda: X 2");
       System.out.println("Kilepes: EXIT A");
+      System.out.println("Palya mentese: SAVE TXT");
       System.out.print("> ");
 
       String input = scanner.nextLine().trim();
@@ -216,16 +233,27 @@ public class Game {
         continue;
       }
 
-      String vehicleId = parts[0].toUpperCase();
+      String vehicleId = parts[0].toUpperCase(Locale.ROOT);
+
+      if (vehicleId.equals("SAVE")) {
+
+        if (parts[1].equalsIgnoreCase("TXT")) {
+          saveBoard();
+        } else {
+          System.out.println("Ismeretlen ment Formátum: SAVE TXT"
+              .replace("ment Formátum", "mentesi formatum"));
+        }
+
+        continue;
+      }
 
       if (vehicleId.equals("EXIT")) {
 
-        String target = parts[1].toUpperCase();
+        String target = parts[1].toUpperCase(Locale.ROOT);
 
         if (!target.equals("A")) {
 
-          System.out.println(
-              "Csak az A jarmuvel nyerhetsz!");
+          System.out.println("Csak az A jarmuvel nyerhetsz!");
 
           LOGGER.warn("Invalid exit attempt: {}", target);
 
@@ -293,8 +321,7 @@ public class Game {
         return;
       }
 
-      System.out.println(
-          "A lepes nem hajthato vegre!");
+      System.out.println("A lepes nem hajthato vegre!");
 
       LOGGER.warn("Illegal player move: {} {}",
           vehicleId, displacement);
@@ -327,8 +354,7 @@ public class Game {
           continue;
         }
 
-        Move move =
-            new Move(vehicle.getId(), amount);
+        Move move = new Move(vehicle.getId(), amount);
 
         if (board.canMove(move)) {
           legalMoves.add(move);
