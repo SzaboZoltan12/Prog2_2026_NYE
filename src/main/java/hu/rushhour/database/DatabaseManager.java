@@ -1,17 +1,25 @@
 package hu.rushhour.database;
 
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
+/** Az eredmények és a ranglista kezelése. */
 public class DatabaseManager {
 
   private final String databaseUrl;
 
+  /** Beállítja az adatbázist. */
   public DatabaseManager() {
     this("jdbc:sqlite:rushhour.db");
   }
 
+  /** Beállítja az adatbázist. */
   public DatabaseManager(String databaseUrl) {
     this.databaseUrl = databaseUrl;
   }
@@ -20,6 +28,7 @@ public class DatabaseManager {
     return DriverManager.getConnection(databaseUrl);
   }
 
+  /** Létrehozza a táblát, ha még nincs. */
   public void initialize() throws SQLException {
 
     String sql = """
@@ -38,12 +47,13 @@ public class DatabaseManager {
     }
   }
 
+  /** Elmenti a játék eredményét. */
   public void recordGame(String name, boolean won)
       throws SQLException {
 
     if (name == null || name.isBlank()) {
       throw new IllegalArgumentException(
-          "Player name cannot be empty");
+          "A játékos neve nem lehet üres.");
     }
 
     String sql = """
@@ -67,6 +77,7 @@ public class DatabaseManager {
     }
   }
 
+  /** Lekéri a játékosokat sorrendben. */
   public List<PlayerStats> getLeaderboard()
       throws SQLException {
 
@@ -96,6 +107,7 @@ public class DatabaseManager {
     return players;
   }
 
+  /** Kiírja a ranglistát. */
   public void printLeaderboard() throws SQLException {
 
     List<PlayerStats> players = getLeaderboard();

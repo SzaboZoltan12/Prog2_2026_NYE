@@ -1,5 +1,6 @@
 package hu.rushhour.database;
 
+/** A játékos eredményeit tárolja. */
 public record PlayerStats(
     String name,
     int games,
@@ -7,6 +8,7 @@ public record PlayerStats(
     int losses
 ) {
 
+  /** Kiszámolja a győzelmek százalékát. */
   public double getWinRate() {
     if (games == 0) {
       return 0;

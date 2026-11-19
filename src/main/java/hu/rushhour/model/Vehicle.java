@@ -2,6 +2,7 @@ package hu.rushhour.model;
 
 import java.util.Objects;
 
+/** A jármű adatai, amelyek nem módosíthatók. */
 public final class Vehicle {
 
   private final String id;
@@ -10,53 +11,60 @@ public final class Vehicle {
   private final int row;
   private final int column;
 
+  /** Létrehozza a járművet és ellenőrzi az adatokat. */
   public Vehicle(String id, int length,
                  Orientation orientation,
                  int row, int column) {
 
     if (id == null || id.isBlank()) {
       throw new IllegalArgumentException(
-          "Vehicle ID cannot be empty");
+          "A járműazonosító nem lehet üres.");
     }
 
     if (length < 2) {
       throw new IllegalArgumentException(
-          "Vehicle length must be at least 2");
+          "A jármű hossza legalább 2 kell legyen.");
     }
 
     if (row < 0 || column < 0) {
       throw new IllegalArgumentException(
-          "Coordinates cannot be negative");
+          "A koordináták nem lehetnek negatívak.");
     }
 
     this.id = id;
     this.length = length;
     this.orientation = Objects.requireNonNull(
-        orientation, "Orientation is required");
+        orientation, "Az irányt meg kell adni.");
     this.row = row;
     this.column = column;
   }
 
+  /** Visszaadja az azonosítót. */
   public String getId() {
     return id;
   }
 
+  /** Visszaadja a hosszát. */
   public int getLength() {
     return length;
   }
 
+  /** Visszaadja az irányát. */
   public Orientation getOrientation() {
     return orientation;
   }
 
+  /** Visszaadja a sorát. */
   public int getRow() {
     return row;
   }
 
+  /** Visszaadja az oszlopát. */
   public int getColumn() {
     return column;
   }
 
+  /** Új járművet ad vissza az új helyen. */
   public Vehicle withPosition(int newRow, int newColumn) {
     return new Vehicle(
         id,
@@ -92,12 +100,12 @@ public final class Vehicle {
 
   @Override
   public String toString() {
-    return "Vehicle{" +
-        "id='" + id + '\'' +
-        ", length=" + length +
-        ", orientation=" + orientation +
-        ", row=" + row +
-        ", column=" + column +
-        '}';
+    return "Vehicle{"
+        + "id='" + id + '\''
+        + ", length=" + length
+        + ", orientation=" + orientation
+        + ", row=" + row
+        + ", column=" + column
+        + '}';
   }
 }

@@ -3,6 +3,7 @@ package hu.rushhour.model;
 import java.util.ArrayList;
 import java.util.List;
 
+/** A pálya és a lépések kezelése. */
 public class Board {
 
   private final int rows;
@@ -13,10 +14,11 @@ public class Board {
   private Exit computerExit;
   private String winnerVehicleId;
 
+  /** Létrehozza a pályát és ellenőrzi a méretét. */
   public Board(int rows, int columns) {
     if (rows <= 0 || columns <= 0) {
       throw new IllegalArgumentException(
-          "Board dimensions must be positive");
+          "A pálya mérete pozitív kell legyen.");
     }
 
     this.rows = rows;
@@ -24,53 +26,56 @@ public class Board {
     this.vehicles = new ArrayList<>();
   }
 
+  /** Visszaadja a sorok számát. */
   public int getRows() {
     return rows;
   }
 
+  /** Visszaadja az oszlopok számát. */
   public int getColumns() {
     return columns;
   }
 
+  /** Visszaadja a járműveket. */
   public List<Vehicle> getVehicles() {
     return List.copyOf(vehicles);
   }
 
-  // Jarmu hozzaadasa a tablahoz
+  /** Ellenőrzi és hozzáadja a járművet. */
   public void addVehicle(Vehicle vehicle) {
     if (vehicle == null) {
       throw new IllegalArgumentException(
-          "Vehicle cannot be null");
+          "A jármű nem lehet null.");
     }
 
     if (isGameOver()) {
       throw new IllegalStateException(
-          "The game is already finished");
+          "A játék már véget ért.");
     }
 
     for (Vehicle existing : vehicles) {
       if (existing.getId().equals(vehicle.getId())) {
         throw new IllegalArgumentException(
-            "Vehicle ID already exists");
+            "Ez a járműazonosító már létezik.");
       }
     }
 
     if (!isWithinBounds(vehicle)) {
       throw new IllegalArgumentException(
-          "Vehicle is outside the board");
+          "A jármű a pályán kívül van.");
     }
 
     for (Vehicle existing : vehicles) {
       if (overlaps(existing, vehicle)) {
         throw new IllegalArgumentException(
-            "Vehicles cannot overlap");
+            "A járművek nem fedhetik egymást.");
       }
     }
 
     vehicles.add(vehicle);
   }
 
-  // Ellenorzi, hogy a jarmu a tablan belul van-e
+  /* Ellenőrzi, hogy a jármű a pályán belül van-e. */
   private boolean isWithinBounds(Vehicle vehicle) {
     int row = vehicle.getRow();
     int column = vehicle.getColumn();
@@ -91,7 +96,7 @@ public class Board {
         <= rows;
   }
 
-  // Ellenorzi, hogy ket jarmu fedi-e egymast
+  /* Ellenőrzi, hogy két jármű ütközik-e. */
   private boolean overlaps(Vehicle first, Vehicle second) {
     for (int i = 0; i < first.getLength(); i++) {
       int firstRow = first.getRow();
@@ -125,7 +130,7 @@ public class Board {
     return false;
   }
 
-  // Jarmu keresese azonosito alapjan
+  /** Megkeresi a járművet az azonosítója alapján. */
   public Vehicle findVehicle(String id) {
     if (id == null) {
       return null;
@@ -140,7 +145,7 @@ public class Board {
     return null;
   }
 
-  // Ellenorzi, hogy egy mozgatas szabalyos-e
+  /** Ellenőrzi a lépés teljes útját. */
   public boolean canMove(Move move) {
     if (move == null || isGameOver()) {
       return false;
@@ -181,7 +186,7 @@ public class Board {
     long distance = Math.abs(
         (long) move.getDisplacement());
 
-    // A teljes mozgatasi utvonal ellenorzese
+    /* A lépés teljes útjának ellenőrzése. */
     for (long step = 1; step <= distance; step++) {
       long stepRow = vehicle.getRow();
       long stepColumn = vehicle.getColumn();
@@ -217,11 +222,11 @@ public class Board {
     return true;
   }
 
-  // Jarmu tenyleges mozgatasa
+  /** Elmozdítja a járművet. */
   public void moveVehicle(Move move) {
     if (!canMove(move)) {
       throw new IllegalArgumentException(
-          "Invalid move");
+          "Érvénytelen lépés.");
     }
 
     Vehicle vehicle = findVehicle(move.getVehicleId());
@@ -243,12 +248,12 @@ public class Board {
     vehicles.set(index, movedVehicle);
   }
 
-  // Az A es B jarmu kijaratanak beallitasa
-  public void configureExits(int aRow, int bRow) {
-    if (aRow < 0 || aRow >= rows
-        || bRow < 0 || bRow >= rows) {
+  /** Beállítja a kijáratokat. */
+  public void configureExits(int humanRow, int computerRow) {
+    if (humanRow < 0 || humanRow >= rows
+        || computerRow < 0 || computerRow >= rows) {
       throw new IllegalArgumentException(
-          "Exit row is outside the board");
+          "A kijárat sora a pályán kívül van.");
     }
 
     Vehicle carA = findVehicle("A");
@@ -256,31 +261,31 @@ public class Board {
 
     if (carA == null || carB == null) {
       throw new IllegalStateException(
-          "Both hero vehicles must exist");
+          "Mindkét céljárműnek léteznie kell.");
     }
 
     if (carA.getOrientation() != Orientation.HORIZONTAL
         || carB.getOrientation() != Orientation.HORIZONTAL) {
       throw new IllegalArgumentException(
-          "Hero vehicles must be horizontal");
+          "A céljárművek vízszintesek kell legyenek.");
     }
 
-    if (carA.getRow() != aRow
-        || carB.getRow() != bRow) {
+    if (carA.getRow() != humanRow
+        || carB.getRow() != computerRow) {
       throw new IllegalArgumentException(
-          "Hero vehicles must match their exit rows");
+          "A céljárműveknek a kijárat sorában kell lenniük.");
     }
 
     if (isGameOver()) {
       throw new IllegalStateException(
-          "The game is already finished");
+          "A játék már véget ért.");
     }
 
-    humanExit = new Exit("A", ExitSide.RIGHT, aRow);
-    computerExit = new Exit("B", ExitSide.LEFT, bRow);
+    humanExit = new Exit("A", ExitSide.RIGHT, humanRow);
+    computerExit = new Exit("B", ExitSide.LEFT, computerRow);
   }
 
-  // Ellenorzi, hogy a celjarmu ki tud-e menni
+  /** Ellenőrzi, hogy szabad-e a kijárat. */
   public boolean canExit(String vehicleId) {
     if (vehicleId == null || isGameOver()) {
       return false;
@@ -352,11 +357,11 @@ public class Board {
     return true;
   }
 
-  // A celjarmu kivezetese a tablarol
+  /** Kivezeti a járművet és beállítja a győztest. */
   public void exitVehicle(String vehicleId) {
     if (!canExit(vehicleId)) {
       throw new IllegalArgumentException(
-          "Vehicle cannot exit the board");
+          "A jármű nem tud kijutni a pályáról.");
     }
 
     Vehicle vehicle = findVehicle(vehicleId);
@@ -365,17 +370,17 @@ public class Board {
     winnerVehicleId = vehicleId;
   }
 
-  // Ellenorzi, hogy befejezodott-e a jatek
+  /** Ellenőrzi, hogy vége van-e a játéknak. */
   public boolean isGameOver() {
     return winnerVehicleId != null;
   }
 
-  // Visszaadja a gyoztes celjarmu azonositojat
+  /** Visszaadja a győztes jármű azonosítóját. */
   public String getWinnerVehicleId() {
     return winnerVehicleId;
   }
 
-  // A jatektabla kirajzolasa
+  /** Kirajzolja a pályát. */
   public void printBoard() {
     String[][] grid = new String[rows][columns];
 
@@ -420,10 +425,12 @@ public class Board {
     }
   }
 
+  /** A játékos kijárata. */
   public Exit getHumanExit() {
     return humanExit;
   }
 
+  /** A gép kijárata. */
   public Exit getComputerExit() {
     return computerExit;
   }

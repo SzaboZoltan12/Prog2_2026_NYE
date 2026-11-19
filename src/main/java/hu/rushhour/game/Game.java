@@ -21,6 +21,7 @@ import java.util.Scanner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/** A játék menetét kezeli. */
 public class Game {
 
   private static final Logger LOGGER =
@@ -38,6 +39,7 @@ public class Game {
   private boolean humanNext = true;
   private boolean running = true;
 
+  /** Beállítja a játékot. */
   public Game() {
     this(new Scanner(System.in),
         new Random(),
@@ -45,14 +47,17 @@ public class Game {
         new DatabaseManager());
   }
 
+  /** Beállítja a játékot. */
   public Game(Scanner scanner, Random random) {
     this(scanner, random, Path.of("board.txt"));
   }
 
+  /** Beállítja a játékot. */
   public Game(Scanner scanner, Random random, Path boardPath) {
     this(scanner, random, boardPath, null);
   }
 
+  /** Beállítja a játékot. */
   public Game(Scanner scanner, Random random,
               Path boardPath, DatabaseManager database) {
     this.scanner = scanner;
@@ -61,12 +66,13 @@ public class Game {
     this.database = database;
   }
 
+  /** Futtatja a játékot a végéig. */
   public void start() {
 
     running = true;
     humanNext = true;
 
-    LOGGER.info("Game started");
+    LOGGER.info("Játék elindult");
 
     System.out.println("=== RUSH HOUR ===");
     System.out.print("Add meg a neved: ");
@@ -81,7 +87,7 @@ public class Game {
     human = new HumanPlayer(name);
     computer = new ComputerPlayer();
 
-    LOGGER.info("Player joined: {}", human.getName());
+    LOGGER.info("Játékos csatlakozott: {}", human.getName());
 
     initializeBoard();
 
@@ -106,7 +112,7 @@ public class Game {
 
     if (!running) {
       System.out.println("Kileptel a jatekbol.");
-      LOGGER.info("Game closed");
+      LOGGER.info("Játék bezárva");
       return;
     }
 
@@ -121,17 +127,18 @@ public class Game {
 
     if (humanWon) {
       System.out.println("Gyoztes: " + human.getName());
-      LOGGER.info("Winner: {}", human.getName());
+      LOGGER.info("Győztes: {}", human.getName());
     } else {
       System.out.println("Gyoztes: " + computer.getName());
-      LOGGER.info("Winner: {}", computer.getName());
+      LOGGER.info("Győztes: {}", computer.getName());
     }
 
     saveResult(humanWon);
 
-    LOGGER.info("Game finished");
+    LOGGER.info("Játék vége");
   }
 
+  /* Elmenti az eredményt az adatbázisba. */
   private void saveResult(boolean humanWon) {
 
     if (database == null) {
@@ -143,19 +150,20 @@ public class Game {
 
       database.recordGame(human.getName(), humanWon);
 
-      LOGGER.info("Game result saved: {}", human.getName());
+      LOGGER.info("Eredmény elmentve: {}", human.getName());
 
       database.printLeaderboard();
 
     } catch (SQLException e) {
 
-      LOGGER.error("Database error", e);
+      LOGGER.error("Adatbázishiba", e);
 
       System.out.println(
           "Az eredmeny mentese vagy a ranglista betoltese sikertelen.");
     }
   }
 
+  /* Betölti a pályát. Ha nincs saját pálya, az alapot használja. */
   private void initializeBoard() {
 
     BoardFileHandler handler = new BoardFileHandler();
@@ -166,11 +174,11 @@ public class Game {
 
       System.out.println("Egyedi palya betoltve.");
 
-      LOGGER.info("Custom board loaded: {}", boardPath);
+      LOGGER.info("Egyedi pálya betöltve: {}", boardPath);
 
     } catch (IOException e) {
 
-      LOGGER.warn("Custom board unavailable: {}", boardPath);
+      LOGGER.warn("Egyedi pálya nem érhető el: {}", boardPath);
 
       try {
 
@@ -178,11 +186,11 @@ public class Game {
 
         System.out.println("Alapertelmezett palya betoltve.");
 
-        LOGGER.info("Default board loaded");
+        LOGGER.info("Alapértelmezett pálya betöltve.");
 
       } catch (IOException ex) {
 
-        LOGGER.error("Board loading failed", ex);
+        LOGGER.error("A pálya betöltése sikertelen.", ex);
 
         throw new IllegalStateException(
             "A palya nem toltheto be.", ex);
@@ -190,6 +198,7 @@ public class Game {
     }
   }
 
+  /* Elmenti a pályát TXT fájlba. */
   private void saveBoard() {
 
     BoardFileHandler handler = new BoardFileHandler();
@@ -203,16 +212,17 @@ public class Game {
       System.out.println("A palya sikeresen mentve!");
       System.out.println("Fajl: " + savePath);
 
-      LOGGER.info("Board saved: {}", savePath);
+      LOGGER.info("Pálya elmentve: {}", savePath);
 
     } catch (IOException e) {
 
       System.out.println("A palya mentese sikertelen!");
 
-      LOGGER.error("Board saving failed", e);
+      LOGGER.error("A pálya mentése sikertelen.", e);
     }
   }
 
+  /* Elmenti a játékot XML fájlba. */
   private void saveGame() {
 
     XmlGameFileHandler handler = new XmlGameFileHandler();
@@ -229,16 +239,17 @@ public class Game {
       System.out.println("A jatek sikeresen mentve!");
       System.out.println("Fajl: " + path);
 
-      LOGGER.info("Game saved: {}", path);
+      LOGGER.info("Játék elmentve: {}", path);
 
     } catch (IOException e) {
 
       System.out.println("A jatek mentese sikertelen!");
 
-      LOGGER.error("Game saving failed", e);
+      LOGGER.error("A játék mentése sikertelen.", e);
     }
   }
 
+  /* Visszatölti a mentett játékot. */
   private boolean loadGame() {
 
     XmlGameFileHandler handler = new XmlGameFileHandler();
@@ -259,7 +270,7 @@ public class Game {
       System.out.println("A mentett jatek betoltve!");
       System.out.println("Jatekos: " + human.getName());
 
-      LOGGER.info("Game loaded: {}", path);
+      LOGGER.info("Játék betöltve: {}", path);
 
       return true;
 
@@ -267,12 +278,13 @@ public class Game {
 
       System.out.println("A mentett jatek nem toltheto be!");
 
-      LOGGER.error("Game loading failed", e);
+      LOGGER.error("A játék betöltése sikertelen.", e);
 
       return false;
     }
   }
 
+  /* Kezeli a játékos parancsait. */
   private void humanTurn() {
 
     System.out.println("\n"
@@ -307,7 +319,7 @@ public class Game {
 
         System.out.println("Hibas parancs!");
 
-        LOGGER.warn("Invalid command: {}", input);
+        LOGGER.warn("Hibás parancs: {}", input);
 
         continue;
       }
@@ -321,7 +333,7 @@ public class Game {
         } else if (parts[1].equalsIgnoreCase("XML")) {
           saveGame();
         } else {
-          System.out.println("Ismeretlen mentési formatum!");
+          System.out.println("Ismeretlen mentesi formatum!");
         }
 
         continue;
@@ -351,7 +363,7 @@ public class Game {
           System.out.println(
               "Csak az A jarmuvel nyerhetsz!");
 
-          LOGGER.warn("Invalid exit attempt: {}", target);
+          LOGGER.warn("Hibás kijárati kísérlet: {}", target);
 
           continue;
         }
@@ -360,7 +372,7 @@ public class Game {
 
           board.exitVehicle(target);
 
-          LOGGER.info("Player exited with vehicle A");
+          LOGGER.info("A játékos kijutott az A járművel.");
 
           return;
         }
@@ -368,7 +380,7 @@ public class Game {
         System.out.println(
             "A kijarathoz vezeto ut nem szabad!");
 
-        LOGGER.warn("Player exit blocked");
+        LOGGER.warn("A játékos kijárata el van zárva.");
 
         continue;
       }
@@ -384,7 +396,7 @@ public class Game {
         System.out.println(
             "Az elmozdulas egesz szam legyen!");
 
-        LOGGER.warn("Invalid displacement: {}", parts[1]);
+        LOGGER.warn("Hibás elmozdulás: {}", parts[1]);
 
         continue;
       }
@@ -400,7 +412,7 @@ public class Game {
         System.out.println(
             "Ervenytelen lepes: " + e.getMessage());
 
-        LOGGER.warn("Invalid move: {}", e.getMessage());
+        LOGGER.warn("Érvénytelen lépés: {}", e.getMessage());
 
         continue;
       }
@@ -411,7 +423,7 @@ public class Game {
 
         System.out.println("Sikeres lepes!");
 
-        LOGGER.info("Player move: {} {}",
+        LOGGER.info("Játékos lépése: {} {}",
             vehicleId, displacement);
 
         humanNext = false;
@@ -422,11 +434,12 @@ public class Game {
       System.out.println(
           "A lepes nem hajthato vegre!");
 
-      LOGGER.warn("Illegal player move: {} {}",
+      LOGGER.warn("Szabálytalan játékoslépés: {} {}",
           vehicleId, displacement);
     }
   }
 
+  /* A gép véletlenszerű szabályos lépést választ. */
   private void computerTurn() {
 
     System.out.println("\nComputer kovetkezik...");
@@ -480,7 +493,7 @@ public class Game {
         System.out.println(
             "Computer kijutott a B jarmuvel!");
 
-        LOGGER.info("Computer exited with vehicle B");
+        LOGGER.info("A gép kijutott a B járművel.");
 
         return;
       }
@@ -493,7 +506,7 @@ public class Game {
           + selected.getVehicleId() + " "
           + selected.getDisplacement());
 
-      LOGGER.info("Computer move: {} {}",
+      LOGGER.info("A gép lépése: {} {}",
           selected.getVehicleId(),
           selected.getDisplacement());
 
@@ -503,6 +516,6 @@ public class Game {
     System.out.println(
         "A gep nem talalt szabalyos lepest.");
 
-    LOGGER.warn("Computer has no legal moves");
+    LOGGER.warn("A gép nem tud szabályosan lépni.");
   }
 }

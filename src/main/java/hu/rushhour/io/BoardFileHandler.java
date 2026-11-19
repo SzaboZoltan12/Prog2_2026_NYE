@@ -3,16 +3,21 @@ package hu.rushhour.io;
 import hu.rushhour.model.Board;
 import hu.rushhour.model.Orientation;
 import hu.rushhour.model.Vehicle;
-
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
+/** TXT pálya mentése és betöltése. */
 public class BoardFileHandler {
 
+  /** Betölti a fájlt. */
   public Board load(Path path) throws IOException {
     try (BufferedReader reader =
              Files.newBufferedReader(path, StandardCharsets.UTF_8)) {
@@ -20,13 +25,14 @@ public class BoardFileHandler {
     }
   }
 
+  /** Betölti az alap pályát. */
   public Board loadDefault() throws IOException {
     InputStream stream = getClass()
         .getResourceAsStream("/default-board.txt");
 
     if (stream == null) {
       throw new IOException(
-          "Default board resource is missing");
+          "Hiányzik az alapértelmezett pályafájl.");
     }
 
     try (Reader reader = new InputStreamReader(
@@ -35,6 +41,7 @@ public class BoardFileHandler {
     }
   }
 
+  /* Beolvassa és ellenőrzi a pálya adatait. */
   private Board parse(BufferedReader reader)
       throws IOException {
 
@@ -51,7 +58,7 @@ public class BoardFileHandler {
 
     if (lines.size() < 4) {
       throw new IOException(
-          "Board file has too few lines");
+          "Túl kevés sor van a pályafájlban.");
     }
 
     try {
@@ -64,8 +71,8 @@ public class BoardFileHandler {
 
       String[] exits = split(lines.get(1), 2);
 
-      int aRow = Integer.parseInt(exits[0]);
-      int bRow = Integer.parseInt(exits[1]);
+      int humanRow = Integer.parseInt(exits[0]);
+      int computerRow = Integer.parseInt(exits[1]);
 
       for (int i = 2; i < lines.size(); i++) {
         String[] parts = split(lines.get(i), 5);
@@ -85,17 +92,18 @@ public class BoardFileHandler {
         board.addVehicle(vehicle);
       }
 
-      board.configureExits(aRow, bRow);
+      board.configureExits(humanRow, computerRow);
 
       return board;
 
     } catch (IllegalArgumentException
              | IllegalStateException e) {
       throw new IOException(
-          "Invalid board file: " + e.getMessage(), e);
+          "Hibás pályafájl: " + e.getMessage(), e);
     }
   }
 
+  /* Ellenőrzi, hogy elég adat van-e a sorban. */
   private String[] split(String line, int expected)
       throws IOException {
 
@@ -103,24 +111,25 @@ public class BoardFileHandler {
 
     if (parts.length != expected) {
       throw new IOException(
-          "Invalid line: " + line);
+          "Hibás sor: " + line);
     }
 
     return parts;
   }
 
+  /** Elmenti az adatokat a fájlba. */
   public void save(Path path, Board board)
       throws IOException {
 
     if (board.isGameOver()) {
       throw new IOException(
-          "Cannot save a completed board");
+          "Befejezett pálya nem menthető.");
     }
 
     if (board.getHumanExit() == null
         || board.getComputerExit() == null) {
       throw new IOException(
-          "Board exits are not configured");
+          "A kijáratok nincsenek beállítva.");
     }
 
     List<String> lines = new ArrayList<>();

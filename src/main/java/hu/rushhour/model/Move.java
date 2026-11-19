@@ -2,30 +2,34 @@ package hu.rushhour.model;
 
 import java.util.Objects;
 
+/** Egy jármű lépésének adatai. */
 public final class Move {
 
   private final String vehicleId;
   private final int displacement;
 
+  /** Ellenőrzi a lépés adatait. */
   public Move(String vehicleId, int displacement) {
     if (vehicleId == null || vehicleId.isBlank()) {
       throw new IllegalArgumentException(
-          "Vehicle ID cannot be empty");
+          "A járműazonosító nem lehet üres.");
     }
 
     if (displacement == 0) {
       throw new IllegalArgumentException(
-          "Displacement cannot be zero");
+          "Az elmozdulás nem lehet nulla.");
     }
 
     this.vehicleId = vehicleId;
     this.displacement = displacement;
   }
 
+  /** Visszaadja a jármű azonosítóját. */
   public String getVehicleId() {
     return vehicleId;
   }
 
+  /** Visszaadja az elmozdulást. */
   public int getDisplacement() {
     return displacement;
   }
@@ -51,9 +55,9 @@ public final class Move {
 
   @Override
   public String toString() {
-    return "Move{" +
-        "vehicleId='" + vehicleId + '\'' +
-        ", displacement=" + displacement +
-        '}';
+    return "Move{"
+        + "vehicleId='" + vehicleId + '\''
+        + ", displacement=" + displacement
+        + '}';
   }
 }

@@ -8,16 +8,18 @@ import java.io.IOException;
 import java.nio.file.Path;
 import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.OutputKeys;
+import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
+/** XML mentés és betöltés. */
 public class XmlGameFileHandler {
 
+  /** Elmenti az adatokat a fájlba. */
   public void save(Path path, GameState state)
       throws IOException {
 
@@ -27,7 +29,7 @@ public class XmlGameFileHandler {
           .newDocumentBuilder()
           .newDocument();
 
-      Board board = state.board();
+      final Board board = state.board();
 
       Element root = document.createElement("game");
       document.appendChild(root);
@@ -86,10 +88,11 @@ public class XmlGameFileHandler {
           new StreamResult(path.toFile()));
 
     } catch (Exception e) {
-      throw new IOException("XML saving failed", e);
+      throw new IOException("Az XML mentése sikertelen.", e);
     }
   }
 
+  /** Betölti a fájlt. */
   public GameState load(Path path)
       throws IOException {
 
@@ -117,15 +120,15 @@ public class XmlGameFileHandler {
       Element root = document.getDocumentElement();
 
       if (!root.getTagName().equals("game")) {
-        throw new IOException("Invalid XML game file");
+        throw new IOException("Hibás XML játékfájl.");
       }
 
-      String playerName = root.getAttribute("player");
+      final String playerName = root.getAttribute("player");
 
       String turn = root.getAttribute("humanTurn");
 
       if (!turn.equals("true") && !turn.equals("false")) {
-        throw new IOException("Invalid player turn");
+        throw new IOException("Hibás játékossorrend.");
       }
 
       boolean humanTurn = Boolean.parseBoolean(turn);
@@ -165,7 +168,7 @@ public class XmlGameFileHandler {
       return new GameState(playerName, board, humanTurn);
 
     } catch (Exception e) {
-      throw new IOException("XML loading failed", e);
+      throw new IOException("Az XML betöltése sikertelen.", e);
     }
   }
 }

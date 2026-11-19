@@ -2,22 +2,24 @@ package hu.rushhour.model;
 
 import java.util.Objects;
 
+/** A mentendő játék adatai. */
 public record GameState(
     String playerName,
     Board board,
     boolean humanTurn) {
 
+  /** Ellenőrzi a mentendő játékot. */
   public GameState {
     if (playerName == null || playerName.isBlank()) {
       throw new IllegalArgumentException(
-          "Player name cannot be empty");
+          "A játékos neve nem lehet üres.");
     }
 
-    Objects.requireNonNull(board, "Board is required");
+    Objects.requireNonNull(board, "A pályát meg kell adni.");
 
     if (board.isGameOver()) {
       throw new IllegalArgumentException(
-          "Game is already finished");
+          "A játék már véget ért.");
     }
   }
 }
