@@ -7,11 +7,13 @@ import hu.rushhour.model.Vehicle;
 import hu.rushhour.player.ComputerPlayer;
 import hu.rushhour.player.HumanPlayer;
 import hu.rushhour.io.BoardFileHandler;
+import hu.rushhour.database.DatabaseManager;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.sql.SQLException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -26,13 +28,17 @@ public class Game {
     private final Scanner scanner;
     private final Random random;
     private final Path boardPath;
+    private final DatabaseManager database;
 
     private Board board;
     private HumanPlayer human;
     private ComputerPlayer computer;
 
     public Game() {
-        this(new Scanner(System.in), new Random());
+        this(new Scanner(System.in),
+                new Random(),
+                Path.of("board.txt"),
+                new DatabaseManager());
     }
 
     public Game(Scanner scanner, Random random) {
@@ -40,9 +46,16 @@ public class Game {
     }
 
     public Game(Scanner scanner, Random random, Path boardPath) {
+        this(scanner, random, boardPath, null);
+    }
+
+    public Game(Scanner scanner, Random random,
+                Path boardPath, DatabaseManager database) {
+
         this.scanner = scanner;
         this.random = random;
         this.boardPath = boardPath;
+        this.database = database;
     }
 
     public void start() {
@@ -55,6 +68,7 @@ public class Game {
         String name = scanner.nextLine().trim();
 
         while (name.isBlank()) {
+
             System.out.print("A nev nem lehet ures: ");
             name = scanner.nextLine().trim();
         }
@@ -94,7 +108,10 @@ public class Game {
 
         String winnerId = board.getWinnerVehicleId();
 
-        if (winnerId.equals(human.getTargetVehicleId())) {
+        boolean humanWon =
+                winnerId.equals(human.getTargetVehicleId());
+
+        if (humanWon) {
 
             System.out.println("Gyoztes: " + human.getName());
 
@@ -107,12 +124,42 @@ public class Game {
             LOGGER.info("Winner: {}", computer.getName());
         }
 
+        saveResult(humanWon);
+
         LOGGER.info("Game finished");
+    }
+
+    private void saveResult(boolean humanWon) {
+
+        if (database == null) {
+            return;
+        }
+
+        try {
+
+            database.initialize();
+
+            database.recordGame(
+                    human.getName(), humanWon);
+
+            LOGGER.info("Game result saved: {}",
+                    human.getName());
+
+            database.printLeaderboard();
+
+        } catch (SQLException e) {
+
+            LOGGER.error("Database error", e);
+
+            System.out.println(
+                    "Az eredmeny mentese vagy a ranglista betoltese sikertelen.");
+        }
     }
 
     private void initializeBoard() {
 
-        BoardFileHandler handler = new BoardFileHandler();
+        BoardFileHandler handler =
+                new BoardFileHandler();
 
         try {
 
@@ -281,7 +328,8 @@ public class Game {
                     continue;
                 }
 
-                Move move = new Move(vehicle.getId(), amount);
+                Move move =
+                        new Move(vehicle.getId(), amount);
 
                 if (board.canMove(move)) {
                     legalMoves.add(move);
