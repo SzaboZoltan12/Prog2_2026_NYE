@@ -1,4 +1,3 @@
-
 package hu.rushhour.Game;
 
 import hu.rushhour.model.Board;
@@ -12,9 +11,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.Scanner;
-import hu.rushhour.io.BoardFileHandler;
-import java.io.IOException;
-import java.nio.file.Path;
 
 public class Game {
 
@@ -26,8 +22,12 @@ public class Game {
     private ComputerPlayer computer;
 
     public Game() {
-        scanner = new Scanner(System.in);
-        random = new Random();
+        this(new Scanner(System.in), new Random());
+    }
+
+    public Game(Scanner scanner, Random random) {
+        this.scanner = scanner;
+        this.random = random;
     }
 
     public void start() {
@@ -81,15 +81,12 @@ public class Game {
     private void initializeBoard() {
         board = new Board(6, 6);
 
-        // Emberi celjarmu
         board.addVehicle(new Vehicle(
                 "A", 2, Orientation.HORIZONTAL, 3, 1));
 
-        // Gepi celjarmu
         board.addVehicle(new Vehicle(
                 "B", 2, Orientation.HORIZONTAL, 1, 3));
 
-        // Akadalyok
         board.addVehicle(new Vehicle(
                 "X", 2, Orientation.VERTICAL, 2, 4));
 
@@ -107,7 +104,7 @@ public class Game {
             System.out.println(
                     "Parancs: JARMU ELMOZDULAS");
             System.out.println(
-                    "Pelda: X -2");
+                    "Pelda: X 2");
             System.out.println(
                     "Kilepes a kijaraton: EXIT A");
 
@@ -179,12 +176,14 @@ public class Game {
         List<Move> legalMoves = new ArrayList<>();
 
         for (Vehicle vehicle : board.getVehicles()) {
+
             int limit = vehicle.getOrientation()
                     == Orientation.HORIZONTAL
                     ? board.getColumns()
                     : board.getRows();
 
             for (int amount = -limit; amount <= limit; amount++) {
+
                 if (amount == 0) {
                     continue;
                 }
@@ -200,7 +199,8 @@ public class Game {
         boolean canWin = board.canExit(
                 computer.getTargetVehicleId());
 
-        int optionCount = legalMoves.size() + (canWin ? 1 : 0);
+        int optionCount = legalMoves.size()
+                + (canWin ? 1 : 0);
 
         if (optionCount == 0) {
             System.out.println(
@@ -212,7 +212,9 @@ public class Game {
 
         if (canWin && choice == legalMoves.size()) {
             board.exitVehicle(computer.getTargetVehicleId());
-            System.out.println("Computer kijutott a B jarmuvel!");
+
+            System.out.println(
+                    "Computer kijutott a B jarmuvel!");
             return;
         }
 
