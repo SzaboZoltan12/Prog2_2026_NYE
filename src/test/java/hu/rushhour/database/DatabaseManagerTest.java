@@ -11,140 +11,140 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class DatabaseManagerTest {
 
-    @TempDir
-    Path tempDir;
+  @TempDir
+  Path tempDir;
 
-    private DatabaseManager database;
+  private DatabaseManager database;
 
-    @BeforeEach
-    void setUp() throws Exception {
+  @BeforeEach
+  void setUp() throws Exception {
 
-        database = new DatabaseManager(
-                "jdbc:sqlite:"
-                        + tempDir.resolve("test.db"));
+    database = new DatabaseManager(
+        "jdbc:sqlite:"
+            + tempDir.resolve("test.db"));
 
-        database.initialize();
-    }
+    database.initialize();
+  }
 
-    @Test
-    void testEmptyLeaderboard() throws Exception {
+  @Test
+  void testEmptyLeaderboard() throws Exception {
 
-        assertTrue(database.getLeaderboard().isEmpty());
-    }
+    assertTrue(database.getLeaderboard().isEmpty());
+  }
 
-    @Test
-    void testRecordWin() throws Exception {
+  @Test
+  void testRecordWin() throws Exception {
 
-        database.recordGame("Player", true);
+    database.recordGame("Player", true);
 
-        PlayerStats player =
-                database.getLeaderboard().getFirst();
+    PlayerStats player =
+        database.getLeaderboard().getFirst();
 
-        assertEquals("Player", player.name());
-        assertEquals(1, player.games());
-        assertEquals(1, player.wins());
-        assertEquals(0, player.losses());
-    }
+    assertEquals("Player", player.name());
+    assertEquals(1, player.games());
+    assertEquals(1, player.wins());
+    assertEquals(0, player.losses());
+  }
 
-    @Test
-    void testRecordLoss() throws Exception {
+  @Test
+  void testRecordLoss() throws Exception {
 
-        database.recordGame("Player", false);
+    database.recordGame("Player", false);
 
-        PlayerStats player =
-                database.getLeaderboard().getFirst();
+    PlayerStats player =
+        database.getLeaderboard().getFirst();
 
-        assertEquals(1, player.games());
-        assertEquals(0, player.wins());
-        assertEquals(1, player.losses());
-    }
+    assertEquals(1, player.games());
+    assertEquals(0, player.wins());
+    assertEquals(1, player.losses());
+  }
 
-    @Test
-    void testMultipleGames() throws Exception {
+  @Test
+  void testMultipleGames() throws Exception {
 
-        database.recordGame("Player", true);
-        database.recordGame("Player", true);
-        database.recordGame("Player", false);
+    database.recordGame("Player", true);
+    database.recordGame("Player", true);
+    database.recordGame("Player", false);
 
-        PlayerStats player =
-                database.getLeaderboard().getFirst();
+    PlayerStats player =
+        database.getLeaderboard().getFirst();
 
-        assertEquals(3, player.games());
-        assertEquals(2, player.wins());
-        assertEquals(1, player.losses());
-    }
+    assertEquals(3, player.games());
+    assertEquals(2, player.wins());
+    assertEquals(1, player.losses());
+  }
 
-    @Test
-    void testLeaderboardOrder() throws Exception {
+  @Test
+  void testLeaderboardOrder() throws Exception {
 
-        database.recordGame("Player1", true);
+    database.recordGame("Player1", true);
 
-        database.recordGame("Player2", true);
-        database.recordGame("Player2", true);
+    database.recordGame("Player2", true);
+    database.recordGame("Player2", true);
 
-        List<PlayerStats> players =
-                database.getLeaderboard();
+    List<PlayerStats> players =
+        database.getLeaderboard();
 
-        assertEquals("Player2", players.get(0).name());
-        assertEquals("Player1", players.get(1).name());
-    }
+    assertEquals("Player2", players.get(0).name());
+    assertEquals("Player1", players.get(1).name());
+  }
 
-    @Test
-    void testWinRate() {
+  @Test
+  void testWinRate() {
 
-        PlayerStats player =
-                new PlayerStats("Player", 10, 7, 3);
+    PlayerStats player =
+        new PlayerStats("Player", 10, 7, 3);
 
-        assertEquals(70.0, player.getWinRate());
-    }
+    assertEquals(70.0, player.getWinRate());
+  }
 
-    @Test
-    void testZeroGamesWinRate() {
+  @Test
+  void testZeroGamesWinRate() {
 
-        PlayerStats player =
-                new PlayerStats("Player", 0, 0, 0);
+    PlayerStats player =
+        new PlayerStats("Player", 0, 0, 0);
 
-        assertEquals(0.0, player.getWinRate());
-    }
+    assertEquals(0.0, player.getWinRate());
+  }
 
-    @Test
-    void testInvalidName() {
+  @Test
+  void testInvalidName() {
 
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> database.recordGame("", true)
-        );
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> database.recordGame("", true)
+    );
 
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> database.recordGame(null, true)
-        );
-    }
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> database.recordGame(null, true)
+    );
+  }
 
-    @Test
-    void testPrintLeaderboard() throws Exception {
+  @Test
+  void testPrintLeaderboard() throws Exception {
 
-        database.recordGame("Player", true);
+    database.recordGame("Player", true);
 
-        assertDoesNotThrow(
-                () -> database.printLeaderboard()
-        );
-    }
+    assertDoesNotThrow(
+        () -> database.printLeaderboard()
+    );
+  }
 
-    @Test
-    void testPersistence() throws Exception {
+  @Test
+  void testPersistence() throws Exception {
 
-        database.recordGame("Player", true);
+    database.recordGame("Player", true);
 
-        DatabaseManager reopened = new DatabaseManager(
-                "jdbc:sqlite:"
-                        + tempDir.resolve("test.db"));
+    DatabaseManager reopened = new DatabaseManager(
+        "jdbc:sqlite:"
+            + tempDir.resolve("test.db"));
 
-        reopened.initialize();
+    reopened.initialize();
 
-        assertEquals(
-                1,
-                reopened.getLeaderboard().getFirst().wins()
-        );
-    }
+    assertEquals(
+        1,
+        reopened.getLeaderboard().getFirst().wins()
+    );
+  }
 }

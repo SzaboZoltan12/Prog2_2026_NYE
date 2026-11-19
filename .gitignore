@@ -37,3 +37,5 @@ logs/
 *.db-journal
 *.db-wal
 *.db-shm
+
+saved-board.txt
