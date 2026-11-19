@@ -8,6 +8,9 @@ import hu.rushhour.player.ComputerPlayer;
 import hu.rushhour.player.HumanPlayer;
 import hu.rushhour.io.BoardFileHandler;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -16,6 +19,9 @@ import java.util.Random;
 import java.util.Scanner;
 
 public class Game {
+
+    private static final Logger LOGGER =
+            LoggerFactory.getLogger(Game.class);
 
     private final Scanner scanner;
     private final Random random;
@@ -41,6 +47,8 @@ public class Game {
 
     public void start() {
 
+        LOGGER.info("Game started");
+
         System.out.println("=== RUSH HOUR ===");
         System.out.print("Add meg a neved: ");
 
@@ -53,6 +61,8 @@ public class Game {
 
         human = new HumanPlayer(name);
         computer = new ComputerPlayer();
+
+        LOGGER.info("Player joined: {}", human.getName());
 
         initializeBoard();
 
@@ -85,10 +95,19 @@ public class Game {
         String winnerId = board.getWinnerVehicleId();
 
         if (winnerId.equals(human.getTargetVehicleId())) {
+
             System.out.println("Gyoztes: " + human.getName());
+
+            LOGGER.info("Winner: {}", human.getName());
+
         } else {
+
             System.out.println("Gyoztes: " + computer.getName());
+
+            LOGGER.info("Winner: {}", computer.getName());
         }
+
+        LOGGER.info("Game finished");
     }
 
     private void initializeBoard() {
@@ -96,19 +115,29 @@ public class Game {
         BoardFileHandler handler = new BoardFileHandler();
 
         try {
+
             board = handler.load(boardPath);
 
             System.out.println("Egyedi palya betoltve.");
 
+            LOGGER.info("Custom board loaded: {}", boardPath);
+
         } catch (IOException e) {
 
+            LOGGER.warn("Custom board unavailable: {}", boardPath);
+
             try {
+
                 board = handler.loadDefault();
 
                 System.out.println(
                         "Alapertelmezett palya betoltve.");
 
+                LOGGER.info("Default board loaded");
+
             } catch (IOException ex) {
+
+                LOGGER.error("Board loading failed", ex);
 
                 throw new IllegalStateException(
                         "A palya nem toltheto be.", ex);
@@ -129,10 +158,15 @@ public class Game {
             System.out.print("> ");
 
             String input = scanner.nextLine().trim();
+
             String[] parts = input.split("\\s+");
 
             if (parts.length != 2) {
+
                 System.out.println("Hibas parancs!");
+
+                LOGGER.warn("Invalid command: {}", input);
+
                 continue;
             }
 
@@ -143,54 +177,81 @@ public class Game {
                 String target = parts[1].toUpperCase();
 
                 if (!target.equals("A")) {
+
                     System.out.println(
                             "Csak az A jarmuvel nyerhetsz!");
+
+                    LOGGER.warn("Invalid exit attempt: {}", target);
+
                     continue;
                 }
 
                 if (board.canExit(target)) {
+
                     board.exitVehicle(target);
+
+                    LOGGER.info("Player exited with vehicle A");
+
                     return;
                 }
 
                 System.out.println(
                         "A kijarathoz vezeto ut nem szabad!");
+
+                LOGGER.warn("Player exit blocked");
+
                 continue;
             }
 
             int displacement;
 
             try {
+
                 displacement = Integer.parseInt(parts[1]);
 
             } catch (NumberFormatException e) {
 
                 System.out.println(
                         "Az elmozdulas egesz szam legyen!");
+
+                LOGGER.warn("Invalid displacement: {}", parts[1]);
+
                 continue;
             }
 
             Move move;
 
             try {
+
                 move = new Move(vehicleId, displacement);
 
             } catch (IllegalArgumentException e) {
 
                 System.out.println(
                         "Ervenytelen lepes: " + e.getMessage());
+
+                LOGGER.warn("Invalid move: {}", e.getMessage());
+
                 continue;
             }
 
             if (board.canMove(move)) {
+
                 board.moveVehicle(move);
 
                 System.out.println("Sikeres lepes!");
+
+                LOGGER.info("Player move: {} {}",
+                        vehicleId, displacement);
+
                 return;
             }
 
             System.out.println(
                     "A lepes nem hajthato vegre!");
+
+            LOGGER.warn("Illegal player move: {} {}",
+                    vehicleId, displacement);
         }
     }
 
@@ -247,6 +308,8 @@ public class Game {
                 System.out.println(
                         "Computer kijutott a B jarmuvel!");
 
+                LOGGER.info("Computer exited with vehicle B");
+
                 return;
             }
 
@@ -258,10 +321,16 @@ public class Game {
                     + selected.getVehicleId() + " "
                     + selected.getDisplacement());
 
+            LOGGER.info("Computer move: {} {}",
+                    selected.getVehicleId(),
+                    selected.getDisplacement());
+
             return;
         }
 
         System.out.println(
                 "A gep nem talalt szabalyos lepest.");
+
+        LOGGER.warn("Computer has no legal moves");
     }
 }

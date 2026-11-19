@@ -30,3 +30,5 @@ out/
 ### Windows / Mac ###
 .DS_Store
 Thumbs.db
+
+logs/
