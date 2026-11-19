@@ -6,7 +6,10 @@ import hu.rushhour.model.Orientation;
 import hu.rushhour.model.Vehicle;
 import hu.rushhour.player.ComputerPlayer;
 import hu.rushhour.player.HumanPlayer;
+import hu.rushhour.io.BoardFileHandler;
 
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -16,6 +19,7 @@ public class Game {
 
     private final Scanner scanner;
     private final Random random;
+    private final Path boardPath;
 
     private Board board;
     private HumanPlayer human;
@@ -26,11 +30,17 @@ public class Game {
     }
 
     public Game(Scanner scanner, Random random) {
+        this(scanner, random, Path.of("board.txt"));
+    }
+
+    public Game(Scanner scanner, Random random, Path boardPath) {
         this.scanner = scanner;
         this.random = random;
+        this.boardPath = boardPath;
     }
 
     public void start() {
+
         System.out.println("=== RUSH HOUR ===");
         System.out.print("Add meg a neved: ");
 
@@ -48,12 +58,14 @@ public class Game {
 
         System.out.println("\nUdvozollek, "
                 + human.getName() + "!");
+
         System.out.println("A celod az A jarmu kijuttatasa.");
         System.out.println("A gep celja a B jarmu kijuttatasa.");
 
         boolean humanTurn = true;
 
         while (!board.isGameOver()) {
+
             System.out.println();
             board.printBoard();
 
@@ -67,6 +79,7 @@ public class Game {
         }
 
         System.out.println("\n=== JATEK VEGE ===");
+
         board.printBoard();
 
         String winnerId = board.getWinnerVehicleId();
@@ -79,35 +92,40 @@ public class Game {
     }
 
     private void initializeBoard() {
-        board = new Board(6, 6);
 
-        board.addVehicle(new Vehicle(
-                "A", 2, Orientation.HORIZONTAL, 3, 1));
+        BoardFileHandler handler = new BoardFileHandler();
 
-        board.addVehicle(new Vehicle(
-                "B", 2, Orientation.HORIZONTAL, 1, 3));
+        try {
+            board = handler.load(boardPath);
 
-        board.addVehicle(new Vehicle(
-                "X", 2, Orientation.VERTICAL, 2, 4));
+            System.out.println("Egyedi palya betoltve.");
 
-        board.addVehicle(new Vehicle(
-                "Y", 2, Orientation.VERTICAL, 1, 1));
+        } catch (IOException e) {
 
-        board.configureExits(3, 1);
+            try {
+                board = handler.loadDefault();
+
+                System.out.println(
+                        "Alapertelmezett palya betoltve.");
+
+            } catch (IOException ex) {
+
+                throw new IllegalStateException(
+                        "A palya nem toltheto be.", ex);
+            }
+        }
     }
 
     private void humanTurn() {
+
         System.out.println("\n"
                 + human.getName() + " kovetkezik!");
 
         while (true) {
-            System.out.println(
-                    "Parancs: JARMU ELMOZDULAS");
-            System.out.println(
-                    "Pelda: X 2");
-            System.out.println(
-                    "Kilepes a kijaraton: EXIT A");
 
+            System.out.println("Parancs: JARMU ELMOZDULAS");
+            System.out.println("Pelda: X 2");
+            System.out.println("Kilepes: EXIT A");
             System.out.print("> ");
 
             String input = scanner.nextLine().trim();
@@ -121,6 +139,7 @@ public class Game {
             String vehicleId = parts[0].toUpperCase();
 
             if (vehicleId.equals("EXIT")) {
+
                 String target = parts[1].toUpperCase();
 
                 if (!target.equals("A")) {
@@ -143,7 +162,9 @@ public class Game {
 
             try {
                 displacement = Integer.parseInt(parts[1]);
+
             } catch (NumberFormatException e) {
+
                 System.out.println(
                         "Az elmozdulas egesz szam legyen!");
                 continue;
@@ -153,7 +174,9 @@ public class Game {
 
             try {
                 move = new Move(vehicleId, displacement);
+
             } catch (IllegalArgumentException e) {
+
                 System.out.println(
                         "Ervenytelen lepes: " + e.getMessage());
                 continue;
@@ -161,6 +184,7 @@ public class Game {
 
             if (board.canMove(move)) {
                 board.moveVehicle(move);
+
                 System.out.println("Sikeres lepes!");
                 return;
             }
@@ -171,11 +195,19 @@ public class Game {
     }
 
     private void computerTurn() {
+
         System.out.println("\nComputer kovetkezik...");
 
-        List<Move> legalMoves = new ArrayList<>();
+        List<Vehicle> candidates =
+                new ArrayList<>(board.getVehicles());
 
-        for (Vehicle vehicle : board.getVehicles()) {
+        while (!candidates.isEmpty()) {
+
+            int index = random.nextInt(candidates.size());
+
+            Vehicle vehicle = candidates.remove(index);
+
+            List<Move> legalMoves = new ArrayList<>();
 
             int limit = vehicle.getOrientation()
                     == Orientation.HORIZONTAL
@@ -194,36 +226,42 @@ public class Game {
                     legalMoves.add(move);
                 }
             }
-        }
 
-        boolean canWin = board.canExit(
-                computer.getTargetVehicleId());
+            boolean canWin = vehicle.getId()
+                    .equals(computer.getTargetVehicleId())
+                    && board.canExit(vehicle.getId());
 
-        int optionCount = legalMoves.size()
-                + (canWin ? 1 : 0);
+            int optionCount = legalMoves.size()
+                    + (canWin ? 1 : 0);
 
-        if (optionCount == 0) {
-            System.out.println(
-                    "A gep nem talalt szabalyos lepest.");
+            if (optionCount == 0) {
+                continue;
+            }
+
+            int choice = random.nextInt(optionCount);
+
+            if (canWin && choice == legalMoves.size()) {
+
+                board.exitVehicle(vehicle.getId());
+
+                System.out.println(
+                        "Computer kijutott a B jarmuvel!");
+
+                return;
+            }
+
+            Move selected = legalMoves.get(choice);
+
+            board.moveVehicle(selected);
+
+            System.out.println("Computer lepese: "
+                    + selected.getVehicleId() + " "
+                    + selected.getDisplacement());
+
             return;
         }
 
-        int choice = random.nextInt(optionCount);
-
-        if (canWin && choice == legalMoves.size()) {
-            board.exitVehicle(computer.getTargetVehicleId());
-
-            System.out.println(
-                    "Computer kijutott a B jarmuvel!");
-            return;
-        }
-
-        Move selected = legalMoves.get(choice);
-
-        board.moveVehicle(selected);
-
-        System.out.println("Computer lepese: "
-                + selected.getVehicleId() + " "
-                + selected.getDisplacement());
+        System.out.println(
+                "A gep nem talalt szabalyos lepest.");
     }
 }
