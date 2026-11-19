@@ -32,3 +32,8 @@ out/
 Thumbs.db
 
 logs/
+
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
