@@ -2,7 +2,9 @@ package hu.rushhour.game;
 
 import hu.rushhour.database.DatabaseManager;
 import hu.rushhour.io.BoardFileHandler;
+import hu.rushhour.io.XmlGameFileHandler;
 import hu.rushhour.model.Board;
+import hu.rushhour.model.GameState;
 import hu.rushhour.model.Move;
 import hu.rushhour.model.Orientation;
 import hu.rushhour.model.Vehicle;
@@ -33,6 +35,9 @@ public class Game {
   private HumanPlayer human;
   private ComputerPlayer computer;
 
+  private boolean humanNext = true;
+  private boolean running = true;
+
   public Game() {
     this(new Scanner(System.in),
         new Random(),
@@ -57,6 +62,9 @@ public class Game {
   }
 
   public void start() {
+
+    running = true;
+    humanNext = true;
 
     LOGGER.info("Game started");
 
@@ -83,20 +91,23 @@ public class Game {
     System.out.println("A celod az A jarmu kijuttatasa.");
     System.out.println("A gep celja a B jarmu kijuttatasa.");
 
-    boolean humanTurn = true;
-
-    while (!board.isGameOver()) {
+    while (running && !board.isGameOver()) {
 
       System.out.println();
       board.printBoard();
 
-      if (humanTurn) {
+      if (humanNext) {
         humanTurn();
       } else {
         computerTurn();
+        humanNext = true;
       }
+    }
 
-      humanTurn = !humanTurn;
+    if (!running) {
+      System.out.println("Kileptel a jatekbol.");
+      LOGGER.info("Game closed");
+      return;
     }
 
     System.out.println("\n=== JATEK VEGE ===");
@@ -109,12 +120,9 @@ public class Game {
         winnerId.equals(human.getTargetVehicleId());
 
     if (humanWon) {
-
       System.out.println("Gyoztes: " + human.getName());
       LOGGER.info("Winner: {}", human.getName());
-
     } else {
-
       System.out.println("Gyoztes: " + computer.getName());
       LOGGER.info("Winner: {}", computer.getName());
     }
@@ -131,7 +139,6 @@ public class Game {
     }
 
     try {
-
       database.initialize();
 
       database.recordGame(human.getName(), humanWon);
@@ -187,14 +194,13 @@ public class Game {
 
     BoardFileHandler handler = new BoardFileHandler();
 
-    Path savePath = Path.of("saved-board.txt");
+    Path savePath = boardPath.resolveSibling("saved-board.txt");
 
     try {
 
       handler.save(savePath, board);
 
       System.out.println("A palya sikeresen mentve!");
-
       System.out.println("Fajl: " + savePath);
 
       LOGGER.info("Board saved: {}", savePath);
@@ -207,6 +213,66 @@ public class Game {
     }
   }
 
+  private void saveGame() {
+
+    XmlGameFileHandler handler = new XmlGameFileHandler();
+
+    Path path = boardPath.resolveSibling("saved-game.xml");
+
+    try {
+
+      GameState state = new GameState(
+          human.getName(), board, humanNext);
+
+      handler.save(path, state);
+
+      System.out.println("A jatek sikeresen mentve!");
+      System.out.println("Fajl: " + path);
+
+      LOGGER.info("Game saved: {}", path);
+
+    } catch (IOException e) {
+
+      System.out.println("A jatek mentese sikertelen!");
+
+      LOGGER.error("Game saving failed", e);
+    }
+  }
+
+  private boolean loadGame() {
+
+    XmlGameFileHandler handler = new XmlGameFileHandler();
+
+    Path path = boardPath.resolveSibling("saved-game.xml");
+
+    try {
+
+      GameState state = handler.load(path);
+
+      HumanPlayer loadedPlayer =
+          new HumanPlayer(state.playerName());
+
+      board = state.board();
+      human = loadedPlayer;
+      humanNext = state.humanTurn();
+
+      System.out.println("A mentett jatek betoltve!");
+      System.out.println("Jatekos: " + human.getName());
+
+      LOGGER.info("Game loaded: {}", path);
+
+      return true;
+
+    } catch (IOException e) {
+
+      System.out.println("A mentett jatek nem toltheto be!");
+
+      LOGGER.error("Game loading failed", e);
+
+      return false;
+    }
+  }
+
   private void humanTurn() {
 
     System.out.println("\n"
@@ -216,11 +282,24 @@ public class Game {
 
       System.out.println("Parancs: JARMU ELMOZDULAS");
       System.out.println("Pelda: X 2");
-      System.out.println("Kilepes: EXIT A");
+      System.out.println("Gyozelem: EXIT A");
       System.out.println("Palya mentese: SAVE TXT");
+      System.out.println("Jatek mentese: SAVE XML");
+      System.out.println("Jatek betoltese: LOAD XML");
+      System.out.println("Kilepes: QUIT");
       System.out.print("> ");
 
+      if (!scanner.hasNextLine()) {
+        running = false;
+        return;
+      }
+
       String input = scanner.nextLine().trim();
+
+      if (input.equalsIgnoreCase("QUIT")) {
+        running = false;
+        return;
+      }
 
       String[] parts = input.split("\\s+");
 
@@ -239,9 +318,25 @@ public class Game {
 
         if (parts[1].equalsIgnoreCase("TXT")) {
           saveBoard();
+        } else if (parts[1].equalsIgnoreCase("XML")) {
+          saveGame();
         } else {
-          System.out.println("Ismeretlen ment Formátum: SAVE TXT"
-              .replace("ment Formátum", "mentesi formatum"));
+          System.out.println("Ismeretlen mentési formatum!");
+        }
+
+        continue;
+      }
+
+      if (vehicleId.equals("LOAD")) {
+
+        if (parts[1].equalsIgnoreCase("XML")) {
+
+          if (loadGame()) {
+            return;
+          }
+
+        } else {
+          System.out.println("Ismeretlen betoltesi formatum!");
         }
 
         continue;
@@ -253,7 +348,8 @@ public class Game {
 
         if (!target.equals("A")) {
 
-          System.out.println("Csak az A jarmuvel nyerhetsz!");
+          System.out.println(
+              "Csak az A jarmuvel nyerhetsz!");
 
           LOGGER.warn("Invalid exit attempt: {}", target);
 
@@ -318,10 +414,13 @@ public class Game {
         LOGGER.info("Player move: {} {}",
             vehicleId, displacement);
 
+        humanNext = false;
+
         return;
       }
 
-      System.out.println("A lepes nem hajthato vegre!");
+      System.out.println(
+          "A lepes nem hajthato vegre!");
 
       LOGGER.warn("Illegal player move: {} {}",
           vehicleId, displacement);

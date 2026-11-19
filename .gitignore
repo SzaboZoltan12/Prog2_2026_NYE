@@ -39,3 +39,5 @@ logs/
 *.db-shm
 
 saved-board.txt
+
+saved-game.xml
